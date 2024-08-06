@@ -1,15 +1,12 @@
 use std::{io::{BufWriter, Write}, ptr};
 
-use anyhow::Error;
 use windows::{
     core::{w, PCWSTR},
     Win32::{
-        self,
-        Foundation::E_POINTER,
         Graphics::Gdi::{BITMAPFILEHEADER, BITMAPINFOHEADER, BI_RGB},
         Media::MediaFoundation::{
-            IMFActivate, IMFAttributes, IMFMediaSource, IMFSample, IMFSourceReader, MFCreateAttributes, MFCreateMediaType, MFCreateSourceReaderFromMediaSource, MFCreateSourceReaderFromURL, MFEnumDeviceSources, MFMediaType_Video, MFShutdown, MFStartup, MFVideoFormat_RGB32, MFSTARTUP_FULL, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID, MF_MT_MAJOR_TYPE, MF_MT_SUBTYPE, MF_SOURCE_READER_FIRST_VIDEO_STREAM, MF_VERSION
-        }, System::Com::{CoInitializeEx, COINIT_MULTITHREADED},
+            IMFActivate, IMFAttributes, IMFMediaSource, IMFSample, IMFSourceReader, MEStreamTick, MFCreateAttributes, MFCreateMediaType, MFCreateSourceReaderFromMediaSource, MFCreateSourceReaderFromURL, MFEnumDeviceSources, MFMediaType_Video, MFShutdown, MFStartup, MFVideoFormat_RGB32, MFSTARTUP_FULL, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID, MF_MT_FRAME_RATE, MF_MT_FRAME_SIZE, MF_MT_MAJOR_TYPE, MF_MT_SUBTYPE, MF_SOURCE_READERF_STREAMTICK, MF_SOURCE_READER_ALL_STREAMS, MF_SOURCE_READER_CONTROLF_DRAIN, MF_SOURCE_READER_CURRENT_TYPE_INDEX, MF_SOURCE_READER_FIRST_VIDEO_STREAM, MF_VERSION
+        }, System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED},
     },
 };
 
@@ -18,7 +15,7 @@ pub unsafe fn mf_startup() -> anyhow::Result<()> {
 }
 
 pub unsafe fn save_bitmap_file(width: i32, height: i32, bytes: &[u8]) -> anyhow::Result<()> {
-    let mut file = std::fs::File::create("image.bmp")?;
+    let file = std::fs::File::create("image.bmp")?;
 
     let mut writer = BufWriter::new(file);
 
@@ -59,6 +56,7 @@ pub unsafe fn save_bitmap_file(width: i32, height: i32, bytes: &[u8]) -> anyhow:
             std::mem::size_of::<BITMAPINFOHEADER>(),
         )
     })?;
+
     writer.write_all(bytes)?;
 
     Ok(())
@@ -77,7 +75,7 @@ fn main() -> anyhow::Result<()> {
         let attributes = attributes.unwrap();
 
         attributes.SetGUID(&MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, &MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID)?;
-
+        
         let mut devices: *mut Option<IMFActivate> = ptr::null_mut();
         let mut count = 0;
 
@@ -87,52 +85,101 @@ fn main() -> anyhow::Result<()> {
 
         let reader = MFCreateSourceReaderFromMediaSource(&device.clone().unwrap().ActivateObject::<IMFMediaSource>()?, &attributes)?;
 
+        let supported_media_type = reader.GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32, MF_SOURCE_READER_CURRENT_TYPE_INDEX.0 as u32)?;
+        
         let media_type = MFCreateMediaType()?;
 
         media_type.SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video)?;
-
-        media_type.SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_RGB32)?;
+        media_type.SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_RGB32)?;  // Ensure this matches your actual format
+        media_type.SetUINT32(&MF_MT_FRAME_SIZE, (1920 << 16) | 1080)?;  // Set frame size
+        media_type.SetUINT32(&MF_MT_FRAME_RATE, (30 << 16) | 1)?;  // Set frame rate
 
         reader.SetCurrentMediaType(
                     MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32,
                     None,
-                    &media_type,
+                    &supported_media_type,
                 )?;
 
-        let mut stream_index = 0;
-        let mut flags: u32 = 0;
-        let mut timestamp: i64 = 0;
-        let mut sample: Option<IMFSample> = None;
+                let mut stream_index = 0;
+                let mut flags: u32 = 0;
+                let mut timestamp: i64 = 0;
+                let mut sample: Option<IMFSample> = None;
+                let mut last_sample_data: Vec<u8> = Vec::new();
+        
+                // Read sample synchronously
+                loop {
+                    reader.ReadSample(
+                        MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32,
+                        0,
+                        Some(&mut stream_index),
+                        Some(&mut flags),
+                        Some(&mut timestamp),
+                        Some(&mut sample),
+                    )?;
+        
+                    if flags & MF_SOURCE_READERF_STREAMTICK.0 as u32 != 0 {
+                        println!("Stream tick detected. Last valid frame may be used.");
+                        
+                        if !last_sample_data.is_empty() {
+                            save_bitmap_file(1920, 1080, &last_sample_data)?;
+                        }
 
-        //Read sample
-        reader.ReadSample(
-            MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32,
-            0,
-            Some(&mut stream_index),
-            Some(&mut flags),
-            Some(&mut timestamp),
-            Some(&mut sample),
-        )?;
+                        continue;
+                    }
+        
+                    if let Some(sample) = &sample {
+                        let buffer = sample.ConvertToContiguousBuffer()?;
+        
+                        let mut data_ptr: *mut u8 = std::ptr::null_mut();
+                        let mut max_length = 0;
+                        let mut current_length = 0;
+        
+                        buffer.Lock(
+                            &mut data_ptr,
+                            Some(&mut max_length),
+                            Some(&mut current_length),
+                        )?;
+        
+                        let data = std::slice::from_raw_parts(data_ptr, current_length as usize);
+        
+                        last_sample_data.clear();
+                        last_sample_data.extend_from_slice(data);
+        
+                        save_bitmap_file(1920, 1080, data)?;
+        
+                        buffer.Unlock()?;
+                    }
+        
+                    if flags & windows::Win32::Media::MediaFoundation::MF_SOURCE_READERF_ENDOFSTREAM.0 as u32 != 0 {
+                        println!("End of stream.");
+                        break;
+                    }
+                }
 
-        let buffer = sample.unwrap().ConvertToContiguousBuffer()?;
+        // dbg!(flags);
+        // dbg!(timestamp);
 
-        let mut data_ptr: *mut u8 = std::ptr::null_mut();
-        let mut max_length = 0;
-        let mut current_length = 0;
+        // let sample = sample.ok_or_else(|| anyhow::anyhow!("Failed to get sample"))?;
+        // let buffer = sample.ConvertToContiguousBuffer()?;
 
-        buffer.Lock(
-            &mut data_ptr,
-            Some(&mut max_length),
-            Some(&mut current_length),
-        )?;
+        // let mut data_ptr: *mut u8 = std::ptr::null_mut();
+        // let mut max_length = 0;
+        // let mut current_length = 0;
 
-        let data = std::slice::from_raw_parts(data_ptr, current_length as usize);
+        // buffer.Lock(
+        //     &mut data_ptr,
+        //     Some(&mut max_length),
+        //     Some(&mut current_length),
+        // )?;
 
-        save_bitmap_file(640, 480, data)?;
+        // let data = std::slice::from_raw_parts(data_ptr, current_length as usize);
 
-        buffer.Unlock()?;
+        // save_bitmap_file(640, 480, data)?;
+
+        // buffer.Unlock()?;
 
         MFShutdown()?;
+        CoUninitialize();
     }
 
     Ok(())
