@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+image = "0.25.2"
+opencv = "0.92.2"
 
 [dependencies.windows]
 version = "0.58.0"
