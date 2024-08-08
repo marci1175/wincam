@@ -1110,7 +1110,6 @@ dependencies = [
  "anyhow",
  "image",
  "opencv",
- "windows",
 ]
 
 [[package]]
