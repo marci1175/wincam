@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["webcam", "camera", "image", "cam"]
 categories = ["webcam", "image"]
 exclude = ["/image.bmp"]
-
+description = "This create aims to create an easy way to capture images."
 [dependencies]
 anyhow = "1.0.86"
 image = "0.25.2"
