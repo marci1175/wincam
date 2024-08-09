@@ -7,3 +7,12 @@
   Despite the name this crate can be used on all platforms supported by [OpenCV](https://crates.io/crates/opencv).
 - ## Example:
   Create a new Webcam instance, and retrive an image in the form of raw bytes:
+  ```rust
+  //Crate webcam handle
+  let mut webcam = Webcam::new_def_auto_detect().unwrap();
+
+  //Get raw image bytes
+  let raw_image_bytes = webcam.get_frame().unwrap();
+
+  //Handle bytes . . .
+  ```
