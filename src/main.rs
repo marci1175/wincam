@@ -1,6 +1,6 @@
 use image::{ExtendedColorType, ImageFormat};
 use opencv::{core::{Mat, MatTraitConst, MatTraitConstManual}, imgproc::{cvt_color_def, COLOR_BGR2RGB}, videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst}};
-use anyhow::{bail};
+use anyhow::bail;
 fn main() -> anyhow::Result<()> {
     //Create video capture instance
     let mut video_capture = videoio::VideoCapture::new_def(0)?;
@@ -28,7 +28,7 @@ fn main() -> anyhow::Result<()> {
         cvt_color_def(&mut frame, &mut corrected_frame, COLOR_BGR2RGB)?;
 
         //Write image
-        image::save_buffer_with_format("img.bmp", corrected_frame.data_bytes()?, frame_size.width as u32, frame_size.height as u32, ExtendedColorType::Rgb8, ImageFormat::Bmp)?;
+        image::save_buffer_with_format("image.bmp", corrected_frame.data_bytes()?, frame_size.width as u32, frame_size.height as u32, ExtendedColorType::Rgb8, ImageFormat::Bmp)?;
     }
 
     Ok(())
