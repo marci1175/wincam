@@ -5,3 +5,5 @@
   The crate uses opencv's binding therefor providing a fast and efficient way of communicating with the underlying apis.
 - ## Support:
   Despite the name this crate can be used on all platforms supported by [OpenCV](https://crates.io/crates/opencv).
+- ## Example:
+  Create a new Webcam instance, and retrive an image in the form of raw bytes:

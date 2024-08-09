@@ -5,6 +5,7 @@ use opencv::{
     imgproc::{cvt_color_def, COLOR_BGR2RGB},
     videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst, CAP_ANY},
 };
+
 fn main() -> anyhow::Result<()> {
     //Create video capture instance
     let mut video_capture = videoio::VideoCapture::new_def(CAP_ANY)?;
@@ -13,7 +14,7 @@ fn main() -> anyhow::Result<()> {
     if !video_capture.is_opened()? {
         bail!("Failed to open camera.")
     }
-
+    
     //Start reading
     loop {
         //Create frame

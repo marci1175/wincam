@@ -1,11 +1,12 @@
 use anyhow::bail;
+use image::imageops::FilterType;
 use opencv::core::{Mat, MatTraitConst, MatTraitConstManual, Size_};
 use opencv::imgproc::{cvt_color_def, COLOR_BGR2RGB};
 use opencv::videoio::{VideoCapture, VideoCaptureTrait, VideoCaptureTraitConst, CAP_ANY};
 
 /// Webcam struct definition
-/// The struct wraps the ```VideoCapture``` type, and has custom function for it.
-/// You can create a new instance by the new functions.
+/// The struct wraps the ```VideoCapture``` type, and has custom functions for it.
+/// You can create a new instance with the ```new``` functions.
 pub struct Webcam(VideoCapture);
 
 impl Webcam {
@@ -59,7 +60,7 @@ impl Webcam {
 
         //Create corrected_frame
         let mut corrected_frame = Mat::default();
-
+        
         //Color correction
         cvt_color_def(&frame, &mut corrected_frame, COLOR_BGR2RGB)?;
 
@@ -77,4 +78,12 @@ impl Webcam {
     pub fn release(&mut self) -> anyhow::Result<()> {
         Ok(self.0.release()?)
     }
+}
+
+/// Resize your images (Raw image bytes are not accepted, since they arent in a format), the resized image's bytes are returned.
+/// You have to provide the bytes, width, hight and the preferred filter type of the image (Nearest is the fastest). 
+pub fn resize_image_from_bytes(formatted_image_bytes: &[u8], width: u32, lenght: u32, filter: FilterType) -> anyhow::Result<Vec<u8>> {
+    let frame = image::load_from_memory(formatted_image_bytes)?;
+
+    Ok(frame.resize_exact(width, lenght, filter).as_bytes().to_vec())
 }
