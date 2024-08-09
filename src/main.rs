@@ -11,7 +11,7 @@ fn main() -> anyhow::Result<()> {
 
     //Check if the camera is open already
     if !video_capture.is_opened()? {
-        bail!("Failed to open camera!")
+        bail!("Failed to open camera.")
     }
 
     //Start reading
