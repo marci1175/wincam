@@ -1,7 +1,7 @@
 use anyhow::bail;
+use opencv::core::{Mat, MatTraitConst, MatTraitConstManual, Size_};
 use opencv::imgproc::{cvt_color_def, COLOR_BGR2RGB};
 use opencv::videoio::{VideoCapture, VideoCaptureTrait, VideoCaptureTraitConst, CAP_ANY};
-use opencv::core::{Mat, MatTraitConst, MatTraitConstManual, Size_};
 
 /// Webcam struct definition
 /// The struct wraps the ```VideoCapture``` type, and has custom function for it.
@@ -18,10 +18,8 @@ impl Webcam {
         if !video_capture_handle.is_opened()? {
             bail!("Failed to open capture device.")
         }
-        
-        Ok(
-            Self(video_capture_handle)
-        )
+
+        Ok(Self(video_capture_handle))
     }
 
     /// Create new ```Webcam``` instance with auto camera detection.
@@ -34,9 +32,7 @@ impl Webcam {
             bail!("Failed to open capture device.")
         }
 
-        Ok(
-            Self(video_capture_handle)
-        )
+        Ok(Self(video_capture_handle))
     }
 
     /// Create new ```Webcam``` instance from the camera index.
@@ -48,9 +44,7 @@ impl Webcam {
             bail!("Failed to open capture device.")
         }
 
-        Ok(
-            Self(video_capture_handle)
-        )
+        Ok(Self(video_capture_handle))
     }
 
     /// Reads an image out of the ```VideoCapture``` buffer, this removes the bytes of the image from the buffer.
@@ -67,7 +61,7 @@ impl Webcam {
         let mut corrected_frame = Mat::default();
 
         //Color correction
-        cvt_color_def(&mut frame, &mut corrected_frame, COLOR_BGR2RGB)?;
+        cvt_color_def(&frame, &mut corrected_frame, COLOR_BGR2RGB)?;
 
         //Return captured frame
         Ok((frame.data_bytes()?.to_vec(), corrected_frame.size()?))
@@ -76,5 +70,11 @@ impl Webcam {
     /// Get the backend api's name
     pub fn get_backend_name(&self) -> anyhow::Result<String> {
         Ok(self.0.get_backend_name()?)
+    }
+
+    /// This function drops the inner ```VideoCapture``` instance.
+    /// If this function is called the instance wont be able to capture any frames, you will need to create a new instance.
+    pub fn release(&mut self) -> anyhow::Result<()> {
+        Ok(self.0.release()?)
     }
 }

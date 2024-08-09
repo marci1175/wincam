@@ -1,4 +1,3 @@
-# -- WIP CRATE --
 # Capture images with your webcam in the easiest way:
 - ## Simplicity:
   This crate builds upon simplicity therefor is very easy to use. The difficulties one might have to encounter while trying to achieve a similar result is nonexistent.

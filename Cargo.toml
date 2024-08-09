@@ -2,8 +2,16 @@
 name = "wincam"
 version = "0.1.0"
 edition = "2021"
+authors = ["Varga Marcell <v.marcell4000@gmail.com>"]
+repository = "https://github.com/marci1175/wincam"
+license = "MIT"
+readme = "README.md"
+keywords = ["webcam", "camera", "image", "cam"]
+categories = ["webcam", "image"]
+exclude = ["/image.bmp"]
 
 [dependencies]
 anyhow = "1.0.86"
 image = "0.25.2"
 opencv = "0.92.2"
+serial_test = "3.1.1"
