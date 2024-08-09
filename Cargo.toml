@@ -1,6 +1,6 @@
 [package]
 name = "wincam"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Varga Marcell <v.marcell4000@gmail.com>"]
 repository = "https://github.com/marci1175/wincam"
