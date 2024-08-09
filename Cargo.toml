@@ -7,7 +7,7 @@ repository = "https://github.com/marci1175/wincam"
 license = "MIT"
 readme = "README.md"
 keywords = ["webcam", "camera", "image", "cam"]
-categories = ["webcam", "image"]
+categories = ["graphics", "hardware-support"]
 exclude = ["/image.bmp"]
 description = "This create aims to create an easy way to capture images."
 [dependencies]
