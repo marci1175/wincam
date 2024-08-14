@@ -65,7 +65,7 @@ impl Webcam {
         cvt_color_def(&frame, &mut corrected_frame, COLOR_BGR2RGB)?;
 
         //Return captured frame
-        Ok((frame.data_bytes()?.to_vec(), corrected_frame.size()?))
+        Ok((corrected_frame.data_bytes()?.to_vec(), corrected_frame.size()?))
     }
 
     /// Get the backend api's name
